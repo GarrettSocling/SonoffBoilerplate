@@ -16,7 +16,11 @@ esp8266 connections
    gpio 14 - pin 5 on header
 */
 
+
+//
 // Includes
+//
+
 
 #include <ESP8266WiFi.h>
 
@@ -28,14 +32,16 @@ esp8266 connections
 
 #include <Ticker.h>              //"for LED status"
 
-
 // Programmers love their fucking abstractions...
 #define INCLUDE_MQTT_SUPPORT
 #ifdef INCLUDE_MQTT_SUPPORT
 #include <PubSubClient.h>        //additional reading: https://github.com/Imroy/pubsubclient
 
 
+//
 // Define Constants & Variables
+//
+
 
 #define   SONOFF_BUTTON             0
 #define   SONOFF_INPUT              14
@@ -53,6 +59,7 @@ const int SONOFF_RELAY_PINS[4] =    {12, 12, 12, 12};
 
 
 // Setup Communications
+
 
 WiFiClient wclient;
 PubSubClient mqttClient(wclient);
@@ -73,6 +80,7 @@ typedef struct {
 
 WMSettings settings;
 
+
 //for LED status
 Ticker ticker;
 
@@ -81,13 +89,17 @@ Ticker ticker;
 const int CMD_WAIT = 0;
 const int CMD_BUTTON_CHANGE = 1;
 
+
 int cmd = CMD_WAIT;
 //int relayState = HIGH;
+
 
 //inverted button state
 int buttonState = HIGH;
 
+
 static long startPress = 0;
+
 
 //http://stackoverflow.com/questions/9072320/split-string-into-string-array
 String getValue(String data, char separator, int index)
@@ -113,10 +125,10 @@ String getValue(String data, char separator, int index)
 
 
 
+//
+// Define Program Subroutines
+//
 
-
-
-// ~~~~NOTE THE BELOW IS BEFORE void setup()~~~~
 
 
 
@@ -329,9 +341,9 @@ void mqttCallback(const MQTT::Publish& pub) {
 
 
 
-
-// ~~~NOTE THE ABOVE IS BEFORE void setup()~~~
-
+//
+// END PROGRAM SUBROUTINE CREATION
+//
 
 
 
