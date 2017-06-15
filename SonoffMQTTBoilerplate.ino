@@ -1,19 +1,18 @@
 /*
-   1MB flash sizee
+1MB flash size
 
-   sonoff header
+sonoff header
    1 - vcc 3v3
    2 - rx
    3 - tx
    4 - gnd
    5 - gpio 14
 
-   esp8266 connections
+esp8266 connections
    gpio  0 - button
    gpio 12 - relay
    gpio 13 - green led - active low
    gpio 14 - pin 5 on header
-
 */
 
 #define   SONOFF_BUTTON             0
@@ -21,24 +20,20 @@
 #define   SONOFF_LED                13
 #define   SONOFF_AVAILABLE_CHANNELS 1
 const int SONOFF_RELAY_PINS[4] =    {12, 12, 12, 12};
+
 //if this is false, led is used to signal startup state, then always on
 //if it s true, it is used to signal startup state, then mirrors relay state
 //S20 Smart Socket works better with it false
 #define SONOFF_LED_RELAY_STATE      false
 
-#define HOSTNAME "sonoff"
+#define HOSTNAME "device-hostname"
 
-//comment out to completly disable respective technology
 #define INCLUDE_MQTT_SUPPORT
 
-
-/********************************************
-   Should not need to edit below this line *
- * *****************************************/
 #include <ESP8266WiFi.h>
 
 #ifdef INCLUDE_MQTT_SUPPORT
-#include <PubSubClient.h>        //https://github.com/Imroy/pubsubclient
+#include <PubSubClient.h>        //additional reading: https://github.com/Imroy/pubsubclient
 
 WiFiClient wclient;
 PubSubClient mqttClient(wclient);
@@ -47,35 +42,18 @@ static bool MQTT_ENABLED              = true;
 int         lastMQTTConnectionAttempt = 0;
 #endif
 
-#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
+#include <WiFiManager.h>          //additional reading: https://github.com/tzapu/WiFiManager
 
 #include <EEPROM.h>
-/*
-#define EEPROM_SALT 12667
-typedef struct {
-  char  bootState[4]      = "off";
-  char  blynkToken[33]    = "";
-  char  blynkServer[33]   = "blynk-cloud.com";
-  char  blynkPort[6]      = "8442";
-  char  mqttHostname[33]  = "";
-  char  mqttPort[6]       = "1883";
-  char  mqttClientID[24]  = HOSTNAME;
-  char  mqttTopic[33]     = HOSTNAME;
-  int   salt              = EEPROM_SALT;
-} WMSettings;
-*/
 
-#define EEPROM_SALT 12661
+#define EEPROM_SALT 12660     // Appears to be some kind of device-id code?  Poorly documented, perhaps see "WMSettings"
 typedef struct {
   char  bootState[4]      = "on";
-  char  stuff[33]         = "foo";
-  char  also_stuff[33]    = "bar";
-  char  yet_more_stuff[6] = "wut";
-  char  mqttHostname[33]  = "tzapu.com";
+  char  mqttHostname[33]  = "192.168.8.1";
   char  mqttPort[6]       = "1883";
-  char  mqttClientID[24]  = "spk-socket";
-  char  mqttTopic[33]     = HOSTNAME;
-  int   salt              = EEPROM_SALT;
+  char  mqttClientID[24]  = "device-name";
+  char  mqttTopic[33]     = HOSTNAME;        //#define HOSTNAME "device-hostname"
+  int   salt              = EEPROM_SALT;     //#define EEPROM_SALT 12660     // Appears to be some kind of recursion...
 } WMSettings;
 
 WMSettings settings;
@@ -155,9 +133,6 @@ void setState(int state, int channel) {
   if (SONOFF_LED_RELAY_STATE) {
     digitalWrite(SONOFF_LED, (state + 1) % 2); // led is active low
   }
-
-  //blynk
-  updateBlynk(channel);
 
   //MQTT
   updateMQTT(channel);
@@ -376,7 +351,15 @@ void setup()
   }
 #endif
 
-  //OTA
+   
+   
+  /*  ~~~OTA~~~
+  
+  ...words...
+  
+      ~~~OTA~~~  */
+   
+   
   ArduinoOTA.onStart([]() {
     Serial.println("Start OTA");
   });
