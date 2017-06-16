@@ -21,20 +21,11 @@ esp8266 connections
 // Includes
 //
 
-
 #include <ESP8266WiFi.h>
-
 #include <WiFiManager.h>         //additional reading: https://github.com/tzapu/WiFiManager
-
 #include <EEPROM.h>
-
 #include <ArduinoOTA.h>
-
 #include <Ticker.h>              //"for LED status"
-
-// Programmers love their fucking abstractions...
-#define INCLUDE_MQTT_SUPPORT
-#ifdef INCLUDE_MQTT_SUPPORT
 #include <PubSubClient.h>        //additional reading: https://github.com/Imroy/pubsubclient
 
 
@@ -42,6 +33,7 @@ esp8266 connections
 // Define Constants & Variables
 //
 
+#define HOSTNAME "device-hostname"
 
 #define   SONOFF_BUTTON             0
 #define   SONOFF_INPUT              14
@@ -49,18 +41,26 @@ esp8266 connections
 #define   SONOFF_AVAILABLE_CHANNELS 1
 const int SONOFF_RELAY_PINS[4] =    {12, 12, 12, 12};
 
+
 //if this is false, led is used to signal startup state, then always on
 //if it s true, it is used to signal startup state, then mirrors relay state
 //S20 Smart Socket works better with it false
-//
 #define SONOFF_LED_RELAY_STATE      false
 
-#define HOSTNAME "device-hostname"
+
+const int CMD_WAIT = 0;
+const int CMD_BUTTON_CHANGE = 1;
+int cmd = CMD_WAIT;
+int buttonState = HIGH;     //inverted button state
+//int relayState = HIGH;
+static long startPress = 0;
+
+Ticker ticker;             //for LED status
 
 
-// Setup Communications
-
-
+//
+// Begin Setup WiFi / MQTT
+//
 WiFiClient wclient;
 PubSubClient mqttClient(wclient);
 
@@ -79,28 +79,12 @@ typedef struct {
 } WMSettings;
 
 WMSettings settings;
+//
+// End Setup WiFi / MQTT
+//
 
 
-//for LED status
-Ticker ticker;
-
-
-//what does this do?
-const int CMD_WAIT = 0;
-const int CMD_BUTTON_CHANGE = 1;
-
-
-int cmd = CMD_WAIT;
-//int relayState = HIGH;
-
-
-//inverted button state
-int buttonState = HIGH;
-
-
-static long startPress = 0;
-
-
+//Why is this function located here?
 //http://stackoverflow.com/questions/9072320/split-string-into-string-array
 String getValue(String data, char separator, int index)
 {
@@ -122,17 +106,9 @@ String getValue(String data, char separator, int index)
 
 
 
-
-
-
 //
 // Define Program Subroutines
 //
-
-
-
-
-
 
 //what does this do?
 void tick()
@@ -155,10 +131,9 @@ void configModeCallback (WiFiManager *myWiFiManager) {
 
 
 
-
 //what does this do?
 void updateMQTT(int channel) {
-#ifdef INCLUDE_MQTT_SUPPORT
+
   int state = digitalRead(SONOFF_RELAY_PINS[channel]);
   char topic[50];
   sprintf(topic, "%s/channel-%d/status", settings.mqttTopic, channel);
@@ -167,10 +142,8 @@ void updateMQTT(int channel) {
     stateString = "disabled";
   }
   mqttClient.publish(topic, stateString);
-#endif
+
 }
-
-
 
 
 
@@ -192,8 +165,6 @@ void setState(int state, int channel) {
 
 
 
-
-
 //what does this do?
 void turnOn(int channel = 0) {
   int relayState = HIGH;
@@ -208,7 +179,6 @@ void turnOff(int channel = 0) {
   int relayState = LOW;
   setState(relayState, channel);
 }
-
 
 
 
@@ -260,7 +230,6 @@ void restart() {
 
 
 
-
 //what does this do?
 void reset() {
   //reset settings to defaults
@@ -282,9 +251,7 @@ void reset() {
 
 
 
-
 //what does this do?
-#ifdef INCLUDE_MQTT_SUPPORT
 void mqttCallback(const MQTT::Publish& pub) {
   Serial.print(pub.topic());
   Serial.print(" => ");
@@ -337,10 +304,6 @@ void mqttCallback(const MQTT::Publish& pub) {
     
 #endif
 
-
-
-
-
 //
 // END PROGRAM SUBROUTINE CREATION
 //
@@ -349,8 +312,9 @@ void mqttCallback(const MQTT::Publish& pub) {
 
 
 
-
-//what does this do?
+//
+// ~~~BEGIN RUN-ONCE SETUP LOOP~~~
+//
 void setup()
 {
   Serial.begin(115200);
@@ -381,10 +345,8 @@ void setup()
     settings = defaults;
   }
 
-
   WiFiManagerParameter custom_boot_state("boot-state", "on/off on boot", settings.bootState, 33);
   wifiManager.addParameter(&custom_boot_state);
-
 
   Serial.println(settings.bootState);
 
@@ -392,8 +354,7 @@ void setup()
    
    
    
-//what does this do?   
-#ifdef INCLUDE_MQTT_SUPPORT
+//what does this do?
   Serial.println(settings.mqttHostname);
   Serial.println(settings.mqttPort);
   Serial.println(settings.mqttClientID);
@@ -413,7 +374,7 @@ void setup()
 
   WiFiManagerParameter custom_mqtt_topic("mqtt-topic", "Topic", settings.mqttTopic, 33);
   wifiManager.addParameter(&custom_mqtt_topic);
-#endif
+
    
   //set config save notify callback
   wifiManager.setSaveConfigCallback(saveConfigCallback);
@@ -431,20 +392,14 @@ void setup()
     Serial.println("Saving config");
 
     strcpy(settings.bootState, custom_boot_state.getValue());
-
-     
-     
-     
-     
      
      
 //what does this do?     
-#ifdef INCLUDE_MQTT_SUPPORT
     strcpy(settings.mqttHostname, custom_mqtt_hostname.getValue());
     strcpy(settings.mqttPort, custom_mqtt_port.getValue());
     strcpy(settings.mqttClientID, custom_mqtt_client_id.getValue());
     strcpy(settings.mqttTopic, custom_mqtt_topic.getValue());
-#endif
+
 
     Serial.println(settings.bootState);
     Serial.println(settings.blynkToken);
@@ -457,15 +412,9 @@ void setup()
   }
 
    
-   
-   
-   
-   
-   
-   
 
 //what does this do?   
-#ifdef INCLUDE_MQTT_SUPPORT
+
   //config mqtt
   if (strlen(settings.mqttHostname) == 0) {
     MQTT_ENABLED = false;
@@ -473,14 +422,8 @@ void setup()
   if (MQTT_ENABLED) {
     mqttClient.set_server(settings.mqttHostname, atoi(settings.mqttPort));
   }
-#endif
 
-   
-   
-   
-   
-   
-   
+
    
   /*  ~~~OTA~~~
   
@@ -536,23 +479,22 @@ void setup()
 
   Serial.println("done setup");
 }
+//
+//  ~~~END RUN-ONCE SETUP LOOP~~~
+//
 
 
 
 
-
-
-
-//what does this do?
+//
+//  ~~~BEGIN MAIN PROGRAM LOOP~~~
+//
 void loop()
 {
-
+   
   //ota loop
   ArduinoOTA.handle();
 
-
-//what does this do?   
-#ifdef INCLUDE_MQTT_SUPPORT
   //mqtt loop
   if (MQTT_ENABLED) {
     if (!mqttClient.connected()) {
@@ -578,7 +520,7 @@ void loop()
       mqttClient.loop();
     }
   }
-#endif
+
 
   //delay(200);
   //Serial.println(digitalRead(SONOFF_BUTTON));
@@ -610,7 +552,9 @@ void loop()
 
 
 }
-
+//
+//  ~~~END MAIN PROGRAM LOOP~~~
+//
 
 
 
