@@ -41,12 +41,10 @@ esp8266 connections
 #define   SONOFF_AVAILABLE_CHANNELS 1
 const int SONOFF_RELAY_PINS[4] =    {12, 12, 12, 12};
 
-
 //if this is false, led is used to signal startup state, then always on
 //if it s true, it is used to signal startup state, then mirrors relay state
 //S20 Smart Socket works better with it false
 #define SONOFF_LED_RELAY_STATE      false
-
 
 const int CMD_WAIT = 0;
 const int CMD_BUTTON_CHANGE = 1;
@@ -55,7 +53,11 @@ int buttonState = HIGH;     //inverted button state
 //int relayState = HIGH;
 static long startPress = 0;
 
-Ticker ticker;             //for LED status
+
+//
+//for LED status
+//
+Ticker ticker;
 
 
 //
@@ -317,7 +319,7 @@ void mqttCallback(const MQTT::Publish& pub) {
 //
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(115200);    // Do I really want this running at 115200?
 
   //set led pin as output
   pinMode(SONOFF_LED, OUTPUT);
@@ -340,7 +342,7 @@ void setup()
   EEPROM.end();
 
   if (settings.salt != EEPROM_SALT) {
-    Serial.println("Invalid settings in EEPROM, trying with defaults");
+    Serial.println("Invalid settings in EEPROM, trying with defaults...");
     WMSettings defaults;
     settings = defaults;
   }
@@ -380,7 +382,7 @@ void setup()
   wifiManager.setSaveConfigCallback(saveConfigCallback);
 
   if (!wifiManager.autoConnect(hostname)) {
-    Serial.println("failed to connect and hit timeout");
+    Serial.println("Failed to connect, timeout expired...");
     //reset and try again, or maybe put it to deep sleep
     ESP.reset();
     delay(1000);
@@ -389,7 +391,7 @@ void setup()
   //Serial.println(custom_blynk_token.getValue());
   //save the custom parameters to FS
   if (shouldSaveConfig) {
-    Serial.println("Saving config");
+    Serial.println("Saving config...");
 
     strcpy(settings.bootState, custom_boot_state.getValue());
      
@@ -414,7 +416,6 @@ void setup()
    
 
 //what does this do?   
-
   //config mqtt
   if (strlen(settings.mqttHostname) == 0) {
     MQTT_ENABLED = false;
@@ -453,7 +454,7 @@ void setup()
   ArduinoOTA.begin();
 
   //if you get here you have connected to the WiFi
-  Serial.println("connected...yeey :)");
+  Serial.println("WiFi Connection Established...");
   ticker.detach();
 
   //setup button
