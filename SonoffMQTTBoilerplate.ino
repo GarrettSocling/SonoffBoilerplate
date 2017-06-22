@@ -25,7 +25,8 @@ esp8266 connections
 #include <WiFiManager.h>         //additional reading: https://github.com/tzapu/WiFiManager
 #include <EEPROM.h>
 #include <ArduinoOTA.h>
-#include <Ticker.h>              //"for LED status"
+//Ticker.h is "for LED status", appears to actually be a "Timer Function Block"...
+#include <Ticker.h>              //additional reading: https://github.com/GarrettSocling/Arduino-1/tree/master/libraries/Ticker               
 #include <PubSubClient.h>        //additional reading: https://github.com/Imroy/pubsubclient
 
 
@@ -54,9 +55,26 @@ int buttonState = HIGH;     //inverted button state
 static long startPress = 0;
 
 
-//
-//for LED status
-//
+
+/*
+  Basic Ticker usage
+  
+  Ticker is an object that will call a given function with a certain period.
+  Each Ticker calls one function. You can have as many Tickers as you like,
+  memory being the only limitation.
+  
+  A function may be attached to a ticker and detached from the ticker.
+  There are two variants of the attach function: attach and attach_ms.
+  The first one takes period in seconds, the second one in milliseconds.
+  
+  An LED connected to GPIO1 will be blinking. Use a built-in LED on ESP-01
+  or connect an external one to TXD on other boards.
+
+  see also: 
+  https://github.com/sstaub/Ticker
+  https://developer.mbed.org/handbook/Ticker
+  Arduino/blob/master/libraries/Ticker/examples/TickerBasic/TickerBasic.ino
+*/
 Ticker ticker;
 
 
